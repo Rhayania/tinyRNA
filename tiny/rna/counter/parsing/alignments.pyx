@@ -145,6 +145,9 @@ cpdef _validate_alignment(AlignedSegment aln):
         cdef uint32_t n_cigar = pysam_get_n_cigar(aln._delegate)
         cdef uint32_t i, op
 
+        if cigar_p is NULL:
+            raise ValueError("CIGAR string is required for all alignments.")
+
         for i in range(n_cigar):
             op = bam_cigar_op(cigar_p[i])
 
