@@ -223,15 +223,15 @@ class TutEditMatch(NumericalMatch):
         # since SEQ, MD, and reference are always 5' -> 3'
         if strand is True:
             iter_3p_md = reversed(md)
-            iter_read_md = reversed(read_seq)
+            iter_read_nt = reversed(read_seq)
             need_read_nt = "T"  # DNA
         else:
             iter_3p_md = iter(md)
-            iter_read_md = read_seq
+            iter_read_nt = read_seq
             need_read_nt = "A"  # DNA
 
         consecutive_3p_u = 0
-        for md_3p_char, read_nt in zip(iter_3p_md, iter_read_md):
+        for md_3p_char, read_nt in zip(iter_3p_md, iter_read_nt):
             while md_3p_char == "0":
                 md_3p_char = next(iter_3p_md)        # Mismatch bases are delimited and flanked by 0
 
