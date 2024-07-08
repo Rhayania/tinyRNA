@@ -71,13 +71,13 @@ cdef class AlignmentIter:
         _validate_alignment(aln)
 
         # Extract relevant info from Pysam's AlignedSegment
-        seq = aln.query_alignment_sequence
-        start = aln._delegate.core.pos + aln.query_alignment_start      # aln.reference_start
+        seq = aln.query_sequence
+        start = aln._delegate.core.pos                                  # aln.reference_start
+        length = aln._delegate.core.l_qseq                              # aln.query_length
         strand = (flag & BAM_FREVERSE) == 0                             # aln.is_forward
         name = pysam_bam_get_qname(aln._delegate).decode()              # aln.query_name
         mismatches = _get_mismatches_from_nm(aln)
         nt5 = _get_nt5(seq, strand)
-        length = len(seq)
 
         alignment = {
             "Name": name,
