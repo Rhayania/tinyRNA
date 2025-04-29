@@ -40,6 +40,18 @@ function stop() {
 # rather than stopping current task and proceeding to the next
 trap 'stop' SIGINT
 
+function get_host_conda_command() {
+  if command -v conda > /dev/null 2>&1; then
+    echo "conda"
+  elif command -v mamba > /dev/null 2>&1; then
+    echo "mamba"
+  elif command -v micromamba > /dev/null 2>&1; then
+    echo "micromamba"
+  else
+    return 1  # installation is required
+  fi
+}
+
 function get_shell_rcfile() {
   local shell="$1"
   local os="$2"
@@ -60,6 +72,45 @@ function get_shell_rcfile() {
     *)
       return 1  # shell isn't supported
   esac
+}
+
+function get_shell_hook() {
+  local shell_current="$1"
+  if [[ $CONDA == "conda" ]]; then
+    $CONDA shell."$shell_current" hook
+  elif [[ $CONDA == "mamba" || $CONDA == "micromamba" ]]; then
+    $CONDA shell hook -s "$shell_current"
+  fi
+}
+
+function get_init_block_regex() {
+  if [[ $CONDA == "conda" ]]; then
+    echo '/^# >>> conda initialize >>>/,/^# <<< conda initialize <<</p'
+  elif [[ $CONDA == "mamba" || $CONDA == "micromamba" ]]; then
+    echo '/^# >>> mamba initialize >>>/,/^# <<< mamba initialize <<</p'
+  fi
+}
+
+function download_and_install_miniconda() {
+  local miniconda_installer="$1"
+  status "Downloading Miniconda..."
+  curl -O -# "https://repo.anaconda.com/miniconda/${miniconda_installer}"
+  if [ -f "$miniconda_installer" ]; then
+    success "Miniconda downloaded"
+    if ! verify_miniconda_checksum "$miniconda_installer"; then
+      fail "Miniconda checksum verification failed"
+      stop
+    fi
+    status "Running interactive Miniconda installer..."
+    # Use bash since the installer appears to no longer work with zsh
+    if ! bash "$miniconda_installer"; then
+      fail "Miniconda installation failed"
+      stop
+    fi
+  else
+    fail "Miniconda download failed"
+    stop
+  fi
 }
 
 function verify_conda_checksum() {
