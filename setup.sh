@@ -40,6 +40,28 @@ function stop() {
 # rather than stopping current task and proceeding to the next
 trap 'stop' SIGINT
 
+function get_shell_rcfile() {
+  local shell="$1"
+  local os="$2"
+  case $shell in
+    bash)
+      # see https://github.com/conda/conda/pull/11849
+      if [[ $os == "macOS" ]]; then
+        echo "${HOME}/.bash_profile"
+      else
+        echo "${HOME}/.bashrc"
+      fi;;
+    zsh)  # |xonsh|tcsh)
+      echo "${HOME}/.${shell}rc";;
+    # fish)
+    #   echo "${HOME}/.config/fish/config.fish";;
+    # nu)
+    #   echo "${HOME}/.config/nushell/config.nu";;
+    *)
+      return 1  # shell isn't supported
+  esac
+}
+
 function verify_conda_checksum() {
   local installer_file="$1"
 
@@ -86,37 +108,57 @@ function setup_macOS_command_line_tools() {
   fi
 }
 
-################################################################################
-# Main Routine
-################################################################################
+
+######--------------------------------- PRECHECKS -----------------------------------######
+
 
 if [[ $CONDA_DEFAULT_ENV == "$env_name" ]]; then
     fail "You must deactivate the $env_name environment before running this script."
     exit 1
 fi
 
-# Check if os is mac or linux
+
+######--------------------------------- HOST INFO -----------------------------------######
+
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  success "macOS detected"
+  platform="macOS"
   arch=$(uname -m)  # Support Apple Silicon
-  shell=$(basename "$(dscl . -read ~/ UserShell | cut -f 2 -d " ")")
+  shell_preferred=$(basename "$(dscl . -read ~/ UserShell | cut -f 2 -d " ")")
   miniconda_installer="Miniconda3-py${miniconda_python_version}_${miniconda_version}-MacOSX-${arch}.sh"
   platform_lockfile="${cwd}/conda/conda-osx-64.lock"
   setup_macOS_command_line_tools
+  export GREP="grep -E" && readonly GREP
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-  success "Linux detected"
-  shell="$(basename "$SHELL")"
+  platform="linux"
+  shell_preferred="$(basename "$SHELL")"
   miniconda_installer="Miniconda3-py${miniconda_python_version}_${miniconda_version}-Linux-x86_64.sh"
   platform_lockfile="${cwd}/conda/conda-linux-64.lock"
+  export GREP="grep -P" && readonly GREP
 else
   fail "Unsupported OS"
   exit 1
 fi
 
-# Check if Conda is installed
-if grep -q "conda init" ~/."$shell"rc ~/."$shell"_profile 2> /dev/null; then
-  success "Conda is already installed for $shell"
-  eval "$(conda shell."$shell" hook)"
+success "$platform detected"
+
+
+######-------------------------------- SHELL INFO -----------------------------------######
+
+
+shell_current=$(ps -o comm= $PPID | cut -f 1 -d " ")
+shell_current=${shell_current#-}  # remove the leading dash that login shells have
+
+if [[ "$shell_current" != "$shell_preferred" ]]; then
+  warn "The current shell is $shell_current but your default is $shell_preferred"
+fi
+
+if ! shellrc=$(get_shell_rcfile "$shell_current" "$platform"); then
+  fail "The shell \"$shell_current\" is not supported"
+  exit 1
+fi
+
+
   miniconda_installed=0
 else
   status "Downloading Miniconda..."
