@@ -7,29 +7,41 @@
 env_name=${1:-tinyrna}
 miniconda_version="23.3.1-0"
 cwd="$(dirname "$0")"
+export ts=$(date +%Y-%m-%d_%H-%M-%S) && readonly ts
 
-# This is the default Python version that will be used by Miniconda (if Miniconda requires installation).
+# This is the default Python version that will be used by Miniconda (if installation of Miniconda is required).
 # Note that this isn't the same as the tinyRNA environment's Python version.
 # The tinyRNA environment's Python version is instead specified in the platform lockfile.
 miniconda_python_version="310"
 
+
+######------------------------------ HELPER FUNCTIONS -------------------------------######
+
+
 function success() {
-  check="✓"
-  green_on="\033[1;32m"
-  green_off="\033[0m"
+  local check="✓"
+  local green_on="\033[1;32m"
+  local green_off="\033[0m"
   printf "${green_on}${check} %s${green_off}\n" "$*"
 }
 
 function status() {
-  blue_on="\033[1;34m"
-  blue_off="\033[0m"
+  local blue_on="\033[1;34m"
+  local blue_off="\033[0m"
   printf "${blue_on}%s${blue_off}\n" "$*"
 }
 
+function warn() {
+  local exclaim="⚠"
+  local yellow_on="\033[1;33m"
+  local yellow_off="\033[0m"
+  printf "${yellow_on}${exclaim} %s${yellow_off}\n" "$*"
+}
+
 function fail() {
-  nope="⃠"
-  red_on="\033[1;31m"
-  red_off="\033[0m"
+  local nope="⃠"
+  local red_on="\033[1;31m"
+  local red_off="\033[0m"
   printf "${red_on}${nope} %s${red_off}\n" "$*"
 }
 
@@ -222,7 +234,7 @@ function setup_macOS_command_line_tools() {
       success "Command line tools setup complete"
     else
       fail "Command line tools installation failed"
-      exit 1
+      stop
     fi
   else
     success "Xcode command line tools are already installed"
@@ -342,11 +354,12 @@ echo '{"env_vars": {"PYTHONNOUSERSITE": "1"}}' > "$CONDA_PREFIX/conda-meta/state
 
 ######---------------------------- tinyRNA INSTALLATION -----------------------------######
 
-# Install the tinyRNA codebase
+
 status "Installing tinyRNA codebase via pip..."
-if ! pip install "$cwd" > "pip_install.log" 2>&1; then
-  fail "Failed to install tinyRNA codebase"
-  echo "Check the pip_install.log file for more information."
+logfile="pip_install_${ts}.log"
+
+if ! pip install "$cwd" > "$logfile" 2>&1; then
+  fail "Failed to install tinyRNA codebase (see ${logfile})"
   exit 1
 fi
 success "tinyRNA codebase installed"
