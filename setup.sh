@@ -292,33 +292,27 @@ if ! shellrc=$(get_shell_rcfile "$shell_current" "$platform"); then
 fi
 
 
+######--------------------------- MINICONDA INSTALLATION ----------------------------######
+
+
+if CONDA=$(get_host_conda_command); then
+  export CONDA && readonly CONDA
+  success "$CONDA is already installed for $shell_current"
+  eval "$(get_shell_hook "$shell_current")"
   miniconda_installed=0
 else
-  status "Downloading Miniconda..."
-  curl -O -# https://repo.anaconda.com/miniconda/$miniconda_installer
-  if [ -f $miniconda_installer ]; then
-    success "Miniconda downloaded"
-    verify_conda_checksum $miniconda_installer
-    status "Running interactive Miniconda installer..."
-    # Use bash since the installer appears to no longer work with zsh
-    if ! bash $miniconda_installer; then
-      fail "Miniconda installation failed"
-      exit 1
-    fi
-  else
-    fail "Miniconda failed to download"
-    exit 1
-  fi
+  warn "Couldn't find an existing Conda/Mamba installation"
+  download_and_install_miniconda "$miniconda_installer"
+  export CONDA="conda" && readonly CONDA
 
-  # Finalize installation
-  # Essentially equivalent to calling `source ~/."$shell"rc` but with cross-shell/platform compatibility
-  . <(tail -n +$(grep -n "# >>> conda initialize" ~/."$shell"rc | cut -f 1 -d ":") ~/."$shell"rc)
-  eval "$(conda shell."$shell" hook)"
-  conda config --set auto_activate_base false
+  # Initialize conda so that we can use commands in this script
+  . <(sed -n "$(get_init_block_regex "$CONDA")" "$shellrc")
+  eval "$(get_shell_hook "$shell_current")"
+  $CONDA config --set auto_activate_base false
 
   success "Miniconda installed"
   miniconda_installed=1
-  rm $miniconda_installer
+  rm "$miniconda_installer"
 fi
 
 
