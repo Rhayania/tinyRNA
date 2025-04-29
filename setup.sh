@@ -125,7 +125,7 @@ function download_and_install_miniconda() {
   fi
 }
 
-function verify_conda_checksum() {
+function verify_miniconda_checksum() {
   local installer_file; local repo_index; local installer_hash; local expected_hash;
 
   installer_file="$1"
@@ -246,7 +246,7 @@ function setup_macOS_command_line_tools() {
 
 
 if [[ $CONDA_DEFAULT_ENV == "$env_name" ]]; then
-    fail "You must deactivate the $env_name environment before running this script."
+    fail "You must deactivate the $env_name environment before running this script"
     exit 1
 fi
 
@@ -321,8 +321,8 @@ fi
 
 if get_env_list | $GREP -q "^${env_name}\t/"; then
   echo
-  echo "The Conda environment \"$env_name\" already exists."
-  echo "It must be removed and recreated."
+  echo "The Conda environment \"$env_name\" already exists"
+  echo "It must be removed and recreated"
   echo
   read -p "Would you like to proceed? [y/n]: " -n 1 -r
   echo

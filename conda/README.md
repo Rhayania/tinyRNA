@@ -31,7 +31,7 @@ Replace `3.XX` with the target Python version. This command will produce a new e
 
 ### 2. Create Platform-Specific Lockfiles
 ```shell
-python3 env.py update-locks --env-file environment_3.XX.yml
+python3 env.py rebuild-locks --env-file environment_3.XX.yml
 ```
 
 Replace `environment_3.XX.yml` with the name of the environment file you created in step 1. This command will rebuild the dependency tree in both lockfiles (linux and osx) according to the new environment file.
