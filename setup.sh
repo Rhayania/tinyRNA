@@ -197,13 +197,18 @@ function remove_environment() {
 }
 
 function setup_environment() {
+  local env_name="$1"
+  local platform_lockfile="$2"
+  local logfile="env_install_${ts}.log"
+
   # Setup tinyRNA environment using our generated lock file
   status "Setting up $env_name environment (this may take a while)..."
-  conda create --file $platform_lockfile --name $env_name 2>&1 | tee "env_install.log"
-  if ! tr -d \\n < env_install.log | grep -q "Executing transaction: ...working... done"; then
-    fail "$env_name environment setup failed"
-    echo "Console output has been saved to env_install.log."
-    exit 1
+  $CONDA create --file "$platform_lockfile" --name "$env_name" -y > "$logfile" 2>&1
+
+  # Check that the new environment is listed
+  if ! get_env_list | $GREP -q "^${env_name}\t/"; then
+    fail "$env_name environment setup failed (see ${logfile})"
+    stop
   else
     success "$env_name environment setup complete"
   fi
@@ -304,39 +309,38 @@ else
   rm $miniconda_installer
 fi
 
-# Check if the conda environment $env_name exists
-if conda env list | grep -q "^${env_name}\s"; then
+
+######----------------------------- CREATE ENVIRONMENT ------------------------------######
+
+
+if get_env_list | $GREP -q "^${env_name}\t/"; then
   echo
-  echo "The Conda environment $env_name already exists."
+  echo "The Conda environment \"$env_name\" already exists."
   echo "It must be removed and recreated."
   echo
   read -p "Would you like to proceed? [y/n]: " -n 1 -r
+  echo
 
   if [[ $REPLY =~ ^y$ ]]; then
-    echo
-    echo
-    status "Removing $env_name environment..."
-    conda env remove -n "$env_name" -y > /dev/null 2>&1
-    success "Environment removed"
-    setup_environment
+    remove_environment "$env_name"
   elif [[ $REPLY =~ ^n$ ]]; then
-    echo
-    echo
     fail "Exiting..."
     exit 1
   else
-    echo
     fail "Invalid option: $REPLY"
     exit 1
   fi
-else
-  # Environment doesn't already exist. Create it.
-  setup_environment
 fi
 
-# Activate environment and set environment variable config for Linux stability
-conda activate $env_name
-conda env config vars set PYTHONNOUSERSITE=1 > /dev/null  # FYI: cannot be set by lockfile
+setup_environment "$env_name" "$platform_lockfile"
+$CONDA activate "$env_name"
+
+# Set environment variable for Python import stability
+# Equivalent (unsupported by Mamba): `conda env config vars set PYTHONNOUSERSITE=1`
+echo '{"env_vars": {"PYTHONNOUSERSITE": "1"}}' > "$CONDA_PREFIX/conda-meta/state"
+
+
+######---------------------------- tinyRNA INSTALLATION -----------------------------######
 
 # Install the tinyRNA codebase
 status "Installing tinyRNA codebase via pip..."
