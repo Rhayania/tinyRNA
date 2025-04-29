@@ -63,20 +63,85 @@ function get_shell_rcfile() {
 }
 
 function verify_conda_checksum() {
-  local installer_file="$1"
+  local installer_file; local repo_index; local installer_hash; local expected_hash;
 
-  # Download the Miniconda installer hash list and parse out only the sha256 sums
-  local hash_list=$(
-    curl -s https://raw.githubusercontent.com/conda/conda-docs/master/docs/source/miniconda_hashes.rst 2> /dev/null \
-    | grep -o '[0-9a-f]\{64\}')
+  installer_file="$1"
+  if ! installer_hash=$(shasum -a 256 "$installer_file" | cut -f 1 -d ' '); then
+    fail "Failed to get checksum for Miniconda installer"
+    return 1
+  fi
 
-  # Check if the downloaded installer has a matching hash
-  if grep -q "$(shasum -a 256 "$installer_file" | cut -f 1 -d ' ')" <<< "$hash_list"; then
+  # Get HTML table of all Miniconda versions and their info, including checksums
+  if ! repo_index=$(curl -s https://repo.anaconda.com/miniconda/ 2> /dev/null); then
+    fail "Failed to download the list of Miniconda installer checksums"
+    return 1
+  fi
+
+  # Parse installer's expected hash from the table
+  expected_hash=$(awk -v target="$installer_file" \
+    'BEGIN { FS = "</?td\.*>"; RS = "</?tr>" }
+    NF==8 && index($2, target) { print $7; exit; }' \
+    <<< "$repo_index")
+
+  if [[ "$installer_hash" == "$expected_hash" ]]; then
     success "Miniconda installer checksum verified"
+  elif $GREP -q "$installer_hash" <<< "$repo_index"; then
+    # Fallback incase table HTML changes in the future
+    success "Miniconda installer checksum verified (fallback)"
   else
-    fail "Miniconda checksum verification failed. Something fishy might be happening."
+    fail "SHA256 checksum for $installer_file"
+    fail "Expected: $expected_hash"
+    fail "Actual:   $installer_hash"
     rm "$installer_file"
-    exit 1
+    return 1
+  fi
+}
+
+## This function attempts to normalize formatting variations in the `env list` output
+## across different Conda/Mamba versions so that it's easier to handle downstream.
+## The output is two tab separated columns: env name (can be zero width) and path.
+function get_env_list() {
+  local env_list; local names_width;
+
+  env_list=$($CONDA env list)
+
+  # Heuristic to determine name column width
+  names_width=$(echo "$env_list" | awk '
+    {
+      path_start_pos = index($0, "/");
+      if (path_start_pos) count[path_start_pos]++;
+    }
+    END {
+      for (pos in count) {
+        if (count[pos] > max_count) {
+          max_count = count[pos];
+          width = pos;
+        }
+      }
+      print width;
+    }'
+  )
+
+  # Extract columns and normalize formatting
+  echo "$env_list" | awk -v f1="$names_width" '
+    substr($0, f1, 1) == "/" {
+      name = substr($0, 1, f1 - 1);
+      gsub(/(^[[:space:]]+)|(([[:space:]]|\*)+)/, "", name);
+      path = substr($0, f1);
+      print name "\t" path;
+    }'
+}
+
+function remove_environment() {
+  local env_name="$1"
+  local logfile="env_remove_${ts}.log"
+
+  status "Removing $env_name environment..."
+  if ! $CONDA env remove -n "$env_name" -y > "$logfile" 2>&1; then
+    fail "Failed to remove environment (see ${logfile})"
+    stop
+  else
+    success "$env_name environment removed"
   fi
 }
 
