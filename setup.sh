@@ -5,7 +5,7 @@
 #   ./setup.sh preferred_name
 
 env_name=${1:-tinyrna}
-miniconda_version="23.3.1-0"
+miniconda_version="25.1.1-2"
 cwd="$(dirname "$0")"
 export ts=$(date +%Y-%m-%d_%H-%M-%S) && readonly ts
 
@@ -358,14 +358,19 @@ if ! pip install "$cwd" > "$logfile" 2>&1; then
 fi
 success "tinyRNA codebase installed"
 
+
+######---------------------------------- FINALIZE -----------------------------------######
+
+
 success "Setup complete"
 if [[ $miniconda_installed -eq 1 ]]; then
-  status "First, run this one-time command to finalize the Miniconda installation:"
   echo
-  echo "  source ~/${shell}.rc"
+  echo "First, run this one-time command to finalize the Miniconda installation:"
   echo
+  echo "  source $shellrc"
 fi
-status "To activate the environment, run:"
 echo
-echo "  conda activate $env_name"
+echo "To activate the environment, run:"
+echo
+echo "  $CONDA activate $env_name"
 echo
