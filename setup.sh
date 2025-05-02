@@ -129,7 +129,7 @@ function verify_miniconda_checksum() {
   local installer_file; local repo_index; local installer_hash; local expected_hash;
 
   installer_file="$1"
-  if ! installer_hash=$(shasum -a 256 "$installer_file" | cut -f 1 -d ' '); then
+  if ! installer_hash=$(set -o pipefail && shasum -a 256 "$installer_file" | cut -f 1 -d ' '); then
     fail "Failed to get checksum for Miniconda installer"
     return 1
   fi
