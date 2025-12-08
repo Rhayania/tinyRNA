@@ -253,10 +253,10 @@ fi
 
 ######--------------------------------- HOST INFO -----------------------------------######
 
-
 if [[ "$OSTYPE" == "darwin"* ]]; then
   platform="macOS"
   arch=$(uname -m)  # Support Apple Silicon
+  echo $arch
   shell_preferred=$(basename "$(dscl . -read ~/ UserShell | cut -f 2 -d " ")")
   miniconda_installer="Miniconda3-py${miniconda_python_version}_${miniconda_version}-MacOSX-${arch}.sh"
   platform_lockfile="${cwd}/conda/conda-osx-64.lock"
