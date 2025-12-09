@@ -9,3 +9,4 @@ tests/run_dir/
 tinyrna.egg-info/*
 tests/cython_tests/stepvector/*
 tiny/rna/counter/*
+build/*

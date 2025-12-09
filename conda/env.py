@@ -237,7 +237,7 @@ def mamba_solve(env_file, env_prefix) -> Dict[str, str]:
 def rebuild_lockfiles(env_file):
     """Rebuilds the osx-64 and linux-64 lockfiles from the provided environment file."""
 
-    supported_platforms = ["osx-64", "linux-64"]
+    supported_platforms = ["osx-64", "linux-64", "osx-arm64"]
     env_ctx = ["conda", "run", "-n", dev_env_name]  # Run command from dev environment regardless of current env
 
     for platform in supported_platforms:
@@ -245,6 +245,8 @@ def rebuild_lockfiles(env_file):
                     "--file", env_file,
                     "--kind", "explicit",
                     "--platform", platform]
+        if (platform == "osx-arm64"):       # Needed for osx-arm64 to avoid a current known bug in lock file creation
+            lock_cmd.append("--no-mamba")
 
         print(f"Building {platform} lockfile ...")
         proc = subprocess.run(

@@ -252,14 +252,16 @@ fi
 
 
 ######--------------------------------- HOST INFO -----------------------------------######
-
 if [[ "$OSTYPE" == "darwin"* ]]; then
   platform="macOS"
   arch=$(uname -m)  # Support Apple Silicon
-  echo $arch
   shell_preferred=$(basename "$(dscl . -read ~/ UserShell | cut -f 2 -d " ")")
   miniconda_installer="Miniconda3-py${miniconda_python_version}_${miniconda_version}-MacOSX-${arch}.sh"
-  platform_lockfile="${cwd}/conda/conda-osx-64.lock"
+  if [[ "$arch" == "arm64" ]]; then
+    platform_lockfile="${cwd}/conda/conda-osx-arm64.lock"
+  else
+    platform_lockfile="${cwd}/conda/conda-osx-64.lock"
+  fi
   setup_macOS_command_line_tools
   export GREP="grep -E" && readonly GREP
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -352,7 +354,7 @@ echo '{"env_vars": {"PYTHONNOUSERSITE": "1"}}' > "$CONDA_PREFIX/conda-meta/state
 status "Installing tinyRNA codebase via pip..."
 logfile="pip_install_${ts}.log"
 
-if ! pip install "$cwd" > "$logfile" 2>&1; then
+if ! python setup.py install > "$logfile" 2>&1; then
   fail "Failed to install tinyRNA codebase (see ${logfile})"
   exit 1
 fi
