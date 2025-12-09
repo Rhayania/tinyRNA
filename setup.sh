@@ -354,7 +354,7 @@ echo '{"env_vars": {"PYTHONNOUSERSITE": "1"}}' > "$CONDA_PREFIX/conda-meta/state
 status "Installing tinyRNA codebase via pip..."
 logfile="pip_install_${ts}.log"
 
-if ! python setup.py install > "$logfile" 2>&1; then
+if ! pip install "$cwd" > "$logfile" 2>&1; then
   fail "Failed to install tinyRNA codebase (see ${logfile})"
   exit 1
 fi
