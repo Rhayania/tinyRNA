@@ -252,6 +252,8 @@ fi
 
 
 ######--------------------------------- HOST INFO -----------------------------------######
+
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
   platform="macOS"
   arch=$(uname -m)  # Support Apple Silicon
