@@ -5,3 +5,8 @@
 .DS_Store
 .idea/*
 tests/run_dir/
+*.log
+tinyrna.egg-info/*
+tests/cython_tests/stepvector/*
+tiny/rna/counter/*
+build/*

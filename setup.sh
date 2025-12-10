@@ -259,7 +259,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   arch=$(uname -m)  # Support Apple Silicon
   shell_preferred=$(basename "$(dscl . -read ~/ UserShell | cut -f 2 -d " ")")
   miniconda_installer="Miniconda3-py${miniconda_python_version}_${miniconda_version}-MacOSX-${arch}.sh"
-  platform_lockfile="${cwd}/conda/conda-osx-64.lock"
+  if [[ "$arch" == "arm64" ]]; then
+    platform_lockfile="${cwd}/conda/conda-osx-arm64.lock"
+  else
+    platform_lockfile="${cwd}/conda/conda-osx-64.lock"
+  fi
   setup_macOS_command_line_tools
   export GREP="grep -E" && readonly GREP
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then

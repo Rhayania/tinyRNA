@@ -1,0 +1,27 @@
+name: test_env
+channels:
+  - conda-forge
+  - bioconda
+  - main
+dependencies:
+  - python=3.10
+  - pysam
+  - bioconductor-deseq2
+  - bowtie
+  - cython
+  - fastp
+  - htseq
+  - nodejs
+  - pandas
+  - pip
+  - setuptools
+  - cxx-compiler
+  - matplotlib
+  - numpy
+  - mscorefonts
+  - psutil
+  - urllib3 <2
+  - r-base
+  - cwltool
+variables:
+  - PYTHONNOUSERSITE=1
